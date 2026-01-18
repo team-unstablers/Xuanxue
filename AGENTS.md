@@ -8,49 +8,136 @@ Xuanxue는 바이브 코딩으로 작성된 Swift용 SSH 키 라이브러리입�
 - OpenSSH 형식의 SSH 개인 키 불러오기
 - 데이터 서명 및 검증
 
+## SEE ALSO
+- `dependencies/libbcrypt` - C언어 기반의 오픈 소스 bcrypt 라이브러리 구현체입니다. 이를 Package.swift에 타겟으로 추가하여 bcrypt KDF를 지원하십시오.
+    - 참고로, libbcrypt 자체의 수정이 필요할 수도 있습니다. 주저 말고 수정하십시오.
+- `additional-contexts` - 원격 제어 소프트웨어 'Noctiluca'에서 이 프로젝트가 필요해진 이유를 볼 수 있을 겁니다. 그리고, 이전에 구현된 코드도 확인할 수 있습니다.
+
+
+## IMPLEMETATION RULES
+
+- `swift-asn1` 패키지를 사용하여 ASN.1 파싱 및 인코딩을 수행하십시오.
+- 어차피 macOS / iOS에서만 쓰일 것이므로 Apple 플랫폼 전용 프레임워크 (CryptoKit, Security) 등을 자유롭게 사용하십시오. 단, 만일을 대비하여 플랫폼 분기 (베이스 프로토콜 + #if canImport() + 구현체) 형태로 작성하는 것을 권장합니다.
+
+- RSA 키 로드 / 서명은 Security 프레임워크, 그 외 알고리즘의 경우 CryptoKit을 사용하십시오.
+
 </section>
 <section id="agent-rules">
 
 # AGENT RULES
 
-## 1. Interaction & Language
-- 작업을 진행할 때 확실하지 않거나 궁금한 점이 있으면, 되도록 **추측하지 말고 사용자에게 질문**해서 명확히 하는 것을 우선해 주세요.
-- 사용자가 한국어 화자인 만큼, 모든 대화와 Plan 작성은 **반드시 한국어**로 진행해 주세요.
-- 프로젝트에 대한 중요한 정보나 커다란 변경 사항이 있을 때는, `AGENTS.md`를 수정하여 프로젝트에 대한 최신 정보를 반영해 주세요.
-- **권한이 부족하여 작업을 수행할 수 없는 경우, 반드시 사용자에게 elevation 요청을 해야 합니다.** (If a command fails due to insufficient permissions, you must elevate the command to the user for approval.)
+## 1. 언어 및 기본 규칙
+- 모든 대화와 Plan은 **한국어**로 작성
+- 중요한 변경 사항이 있으면 `AGENTS.md` 업데이트
+- 커밋 메시지/코드 코멘트는 사무적으로 작성
 
-## 2. Workflow Protocol (중요)
-Codex는 기본적으로 자율적(Autonomous)으로 행동하지만, 아래의 **[Explicit Plan Mode]** 조건에 해당할 경우 행동 방식을 변경해야 합니다.
+## 2. 자율 개발 루프 (Autonomous Development Loop)
 
-### [Explicit Plan Mode] 트리거 조건
-1. 사용자가 명시적으로 **'Plan 모드'**, **'계획 모드'**, 또는 **'설계 먼저'**라고 요청한 경우.
-2. 작업이 **3개 이상의 파일**에 구조적 변경을 일으키거나, **Core Logic(Protobuf, Network, AVFoundation)**을 건드리는 위험한 변경일 경우.
+### 기본 행동 원칙
+Claude는 **완전 자율 모드**로 동작합니다. 다음 루프를 따르세요:
 
-### [Explicit Plan Mode] 행동 수칙
-위 조건이 발동되면 **즉시 코드 구현을 멈추고** 다음 절차를 따르세요:
-1. **Stop:** 코드를 작성하거나 수정하지 마십시오. (파일 읽기는 가능)
-2. **Plan:** `update_plan` 도구를 사용하여 **한국어**로 상세 구현 계획, 영향 범위, 예상 리스크를 작성하십시오.
-3. **Ask:** 사용자에게 계획을 제시하고 **"이대로 진행할까요?"**라고 승인을 요청하십시오.
-4. **Action:** 사용자의 명시적 승인(예: "ㅇㅇ", "진행해")이 떨어진 후에만 코드를 수정하십시오.
+1. **BUILD**: 코드를 작성/수정
+2. **TEST**: `swift test` 실행
+3. **ANALYZE**: 실패 시 원인 분석
+4. **FIX**: 문제 수정
+5. **REPEAT**: 모든 테스트 통과까지 반복
+6. **COMMIT**: 성공 시 의미 있는 단위로 커밋
 
-*(위 조건에 해당하지 않는 단순 수정이나 버그 픽스는 기존대로 승인 없이 즉시 처리하고 결과를 보고하십시오.)*
+### 루프 종료 조건
+다음 조건을 **모두** 충족하면 작업 완료:
+- 모든 테스트 통과 (`swift test` 성공)
+- 빌드 성공 (`swift build` 성공)
+- 요청된 기능/버그 수정 완료
 
-## COMMIT CONVENTIONS
+### 절대 하지 말 것
+- 테스트 실패를 무시하고 진행
+- 사용자에게 "이거 해도 될까요?" 반복 질문
+- 막히면 바로 포기 → 최소 3회 다른 접근법 시도 후 보고
 
-- 만약 git commit을 작성할 때는 기존 커밋 컨벤션을 따르는 것을 우선하고, 당신 자신을 Co-author로 추가하지 말아주세요.
-- 커밋 컨벤션은 다음과 같습니다.
+## 3. 커밋 컨벤션
 
 ```
 [scope]: [subject]
 ```
 
-- [scope]: 변경 사항의 범위를 나타내는 짧은 단어 (예: core, ui, docs 등)
-- [subject]: 변경 사항을 간결하게 설명하는 문장 (명령문 형태)
+예시:
+- `core/keys: SSH 공개 키 파싱 구현`
+- `test: Ed25519 키 서명 테스트 추가`
+- `fix: RSA 키 로드 시 메모리 누수 수정`
 
-### EXAMPLES
-  - `transport/quic: QUIC 연결 재시도 로직 추가`
-  - `msgdef/v1/channels: 채널 메시지 정의 업데이트`
-  - `docs(README): README 파일에 설치 가이드 추가`
-  - `test(transport/quic): QUIC 전송 테스트 케이스 작성`
+</section>
+
+<section id="project-todo">
+
+# PROJECT TODO
+
+> README.md의 FEATURES 섹션에서 추출. 자율 루프에서 참조할 체크리스트.
+
+## Phase 1: 기반 구축
+- [ ] Package.swift에 swift-asn1 의존성 추가
+- [ ] Package.swift에 libbcrypt 타겟 추가
+- [ ] 기본 테스트 프레임워크 구축
+
+## Phase 2: 키 로딩
+- [ ] OpenSSH Public Key 로딩
+- [ ] OpenSSH Private Key 로딩
+  - [ ] 암호화된 Private Key 지원
+  - [ ] bcrypt KDF 지원
+- [ ] PEM Private Key 로딩
+
+## Phase 3: 키 타입 / 알고리즘
+- [ ] RSA 키 지원
+  - [ ] `ssh-rsa`: RSA with SHA-1
+  - [ ] `rsa-sha2-256`: RSA with SHA-256
+  - [ ] `rsa-sha2-512`: RSA with SHA-512
+- [ ] ECDSA 키 지원
+  - [ ] `ecdsa-sha2-nistp256`
+  - [ ] `ecdsa-sha2-nistp384`
+  - [ ] `ecdsa-sha2-nistp521`
+- [ ] Ed25519 키 지원
+
+## Phase 4: 서명 및 검증
+- [ ] Private Key로 데이터 서명
+- [ ] Public Key로 서명 검증
+
+## Phase 5: 키 생성 (선택)
+- [ ] RSA 키 생성
+- [ ] ECDSA 키 생성
+- [ ] Ed25519 키 생성
+
+</section>
+
+<section id="autonomous-loop">
+
+# AUTONOMOUS LOOP CONFIGURATION
+
+## Ralph Wiggum Plugin 사용법
+
+```bash
+# 설치 (최초 1회)
+/plugin marketplace add anthropics/claude-code
+/plugin install ralph-wiggum@claude-plugins-official
+
+# 실행
+/ralph --max-iterations 20 --completion-promise "모든 테스트 통과"
+
+# 취소
+/cancel-ralph
+```
+
+## 자율 루프 실행 시 규칙
+
+1. **매 반복마다 `swift test` 실행**
+2. **실패 시 원인 분석 후 수정** (같은 에러 3회 반복 시 다른 접근법 시도)
+3. **성공 시 다음 TODO 항목으로 이동**
+4. **의미 있는 단위로 커밋** (한 기능 완성 시)
+
+## 완료 신호
+
+모든 Phase의 TODO가 완료되면:
+```
+EXIT_SIGNAL: true
+모든 테스트 통과
+```
 
 </section>
