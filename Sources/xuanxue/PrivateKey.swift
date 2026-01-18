@@ -686,6 +686,158 @@ extension PrivateKey {
     }
 }
 
+// MARK: - Key Generation
+extension PrivateKey {
+    /// Generate a new RSA key pair
+    /// - Parameters:
+    ///   - keySize: The key size in bits (2048, 3072, or 4096)
+    ///   - comment: Optional comment for the key
+    /// - Returns: A new RSA private key
+    public static func generateRSA(keySize: Int = 2048, comment: String? = nil) throws -> PrivateKey {
+        #if canImport(Security)
+        guard [2048, 3072, 4096].contains(keySize) else {
+            throw SSHError.invalidKeyData("RSA key size must be 2048, 3072, or 4096 bits")
+        }
+
+        let attributes: [String: Any] = [
+            kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
+            kSecAttrKeySizeInBits as String: keySize
+        ]
+
+        var error: Unmanaged<CFError>?
+        guard let secKey = SecKeyCreateRandomKey(attributes as CFDictionary, &error) else {
+            let errorMessage = error?.takeRetainedValue().localizedDescription ?? "Unknown error"
+            throw SSHError.invalidKeyData("Failed to generate RSA key: \(errorMessage)")
+        }
+
+        // Extract public key
+        guard let publicSecKey = SecKeyCopyPublicKey(secKey) else {
+            throw SSHError.invalidKeyData("Cannot extract public key from generated key")
+        }
+
+        guard let publicKeyDER = SecKeyCopyExternalRepresentation(publicSecKey, nil) as Data? else {
+            throw SSHError.invalidKeyData("Cannot export public key")
+        }
+
+        // Parse n and e from public key DER
+        let (n, e) = try parseRSAPublicKeyDER(publicKeyDER)
+
+        // Create SSH public key data
+        let sshPublicKeyData = createSSHPublicKeyData(algorithm: .rsa, n: n, e: e)
+        let publicKey = try PublicKey(algorithm: .rsa, keyData: sshPublicKeyData, comment: comment)
+
+        return PrivateKey(
+            algorithm: .rsa,
+            keySize: keySize,
+            comment: comment,
+            publicKey: publicKey,
+            keyData: .rsa(secKey)
+        )
+        #else
+        throw SSHError.unsupportedAlgorithm("RSA key generation not supported on this platform")
+        #endif
+    }
+
+    /// Generate a new ECDSA key pair
+    /// - Parameters:
+    ///   - curve: The ECDSA curve (nistp256, nistp384, or nistp521)
+    ///   - comment: Optional comment for the key
+    /// - Returns: A new ECDSA private key
+    public static func generateECDSA(curve: ECDSACurve = .p256, comment: String? = nil) throws -> PrivateKey {
+        #if canImport(CryptoKit)
+        let privateKeyWrapper: ECDSAPrivateKeyWrapper
+        let algorithm: SSHKeyAlgorithm
+        let keySize: Int
+        let curveName: String
+        let publicPoint: Data
+
+        switch curve {
+        case .p256:
+            let key = P256.Signing.PrivateKey()
+            privateKeyWrapper = .p256(key)
+            algorithm = .ecdsaSha2Nistp256
+            keySize = 256
+            curveName = "nistp256"
+            publicPoint = Data([0x04]) + key.publicKey.rawRepresentation
+
+        case .p384:
+            let key = P384.Signing.PrivateKey()
+            privateKeyWrapper = .p384(key)
+            algorithm = .ecdsaSha2Nistp384
+            keySize = 384
+            curveName = "nistp384"
+            publicPoint = Data([0x04]) + key.publicKey.rawRepresentation
+
+        case .p521:
+            let key = P521.Signing.PrivateKey()
+            privateKeyWrapper = .p521(key)
+            algorithm = .ecdsaSha2Nistp521
+            keySize = 521
+            curveName = "nistp521"
+            publicPoint = Data([0x04]) + key.publicKey.rawRepresentation
+        }
+
+        // Create SSH public key data
+        let sshPublicKeyData = createSSHECDSAPublicKeyData(
+            algorithm: algorithm,
+            curveName: curveName,
+            publicPoint: publicPoint
+        )
+        let publicKey = try PublicKey(algorithm: algorithm, keyData: sshPublicKeyData, comment: comment)
+
+        return PrivateKey(
+            algorithm: algorithm,
+            keySize: keySize,
+            comment: comment,
+            publicKey: publicKey,
+            keyData: .ecdsa(privateKeyWrapper)
+        )
+        #else
+        throw SSHError.unsupportedAlgorithm("ECDSA key generation not supported on this platform")
+        #endif
+    }
+
+    /// Generate a new Ed25519 key pair
+    /// - Parameters:
+    ///   - comment: Optional comment for the key
+    /// - Returns: A new Ed25519 private key
+    public static func generateEd25519(comment: String? = nil) throws -> PrivateKey {
+        #if canImport(CryptoKit)
+        let key = Curve25519.Signing.PrivateKey()
+
+        // Create SSH public key data
+        let sshPublicKeyData = createSSHEd25519PublicKeyData(publicKeyBytes: key.publicKey.rawRepresentation)
+        let publicKey = try PublicKey(algorithm: .ed25519, keyData: sshPublicKeyData, comment: comment)
+
+        return PrivateKey(
+            algorithm: .ed25519,
+            keySize: 256,
+            comment: comment,
+            publicKey: publicKey,
+            keyData: .ed25519(key)
+        )
+        #else
+        throw SSHError.unsupportedAlgorithm("Ed25519 key generation not supported on this platform")
+        #endif
+    }
+
+    /// Internal initializer for key generation
+    private init(algorithm: SSHKeyAlgorithm, keySize: Int, comment: String?, publicKey: PublicKey, keyData: PrivateKeyData) {
+        self.algorithm = algorithm
+        self.keySize = keySize
+        self.comment = comment
+        self.publicKey = publicKey
+        self.keyData = keyData
+    }
+}
+
+/// ECDSA curve types for key generation
+public enum ECDSACurve: Sendable {
+    case p256
+    case p384
+    case p521
+}
+
 // MARK: - Encryption Helpers
 extension PrivateKey {
     /// Get cipher parameters: (key length, IV length, block size)
