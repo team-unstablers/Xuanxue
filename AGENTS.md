@@ -21,6 +21,8 @@ Xuanxue는 바이브 코딩으로 작성된 Swift용 SSH 키 라이브러리입�
 
 - RSA 키 로드 / 서명은 Security 프레임워크, 그 외 알고리즘의 경우 CryptoKit을 사용하십시오.
 
+- 테스트 키가 필요한 경우, `ssh-keygen`을 사용하여 키를 생성하십시오.
+
 </section>
 <section id="agent-rules">
 
