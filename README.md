@@ -55,6 +55,24 @@ else {
 }
 ```
 
+## Key Generation
+
+```swift
+import Xuanxue
+
+// Generate Ed25519 key (fastest, recommended for new keys)
+let ed25519Key = try Xuanxue.PrivateKey.generateEd25519(comment: "user@host")
+
+// Generate ECDSA key (P-256, P-384, or P-521)
+let ecdsaKey = try Xuanxue.PrivateKey.generateECDSA(curve: .p256, comment: "user@host")
+
+// Generate RSA key (2048, 3072, or 4096 bits)
+let rsaKey = try Xuanxue.PrivateKey.generateRSA(keySize: 2048, comment: "user@host")
+
+// Access the corresponding public key
+let publicKey = ed25519Key.publicKey
+```
+
 ## Signing and Verifying Data
 
 ```swift
@@ -74,32 +92,32 @@ guard publicKey.verify(signature, for: data) else {
 # FEATURES
 
 ## Key Loading
-- [ ] load OpenSSH Private keys
-  - [ ] load encrypted OpenSSH Private keys
-    - [ ] support for different KDFs (bcrypt, etc)
-- [ ] load PEM Private keys
+- [x] load OpenSSH Private keys
+  - [x] load encrypted OpenSSH Private keys
+    - [x] support for different KDFs (bcrypt, etc)
+- [x] load PEM Private keys
 
-- [ ] load OpenSSH Public Keys
+- [x] load OpenSSH Public Keys
 
 ## Key Types / Algorithms
-- [ ] RSA Key Support
-  - [ ] `ssh-rsa`: RSA with SHA-1
-  - [ ] `rsa-sha2-256`: RSA with SHA-256
-  - [ ] `rsa-sha2-512`: RSA with SHA-512
-- [ ] ECDSA Key Support
-  - [ ] `ecdsa-sha2-nistp256`
-  - [ ] `ecdsa-sha2-nistp384`
-  - [ ] `ecdsa-sha2-nistp521`
-- [ ] ed25519 Key Support
+- [x] RSA Key Support
+  - [x] `ssh-rsa`: RSA with SHA-1
+  - [x] `rsa-sha2-256`: RSA with SHA-256
+  - [x] `rsa-sha2-512`: RSA with SHA-512
+- [x] ECDSA Key Support
+  - [x] `ecdsa-sha2-nistp256`
+  - [x] `ecdsa-sha2-nistp384`
+  - [x] `ecdsa-sha2-nistp521`
+- [x] ed25519 Key Support
 
 ## Key Generation
-- [ ] RSA Key Generation
-- [ ] ECDSA Key Generation
-- [ ] ed25519 Key Generation
+- [x] RSA Key Generation
+- [x] ECDSA Key Generation
+- [x] ed25519 Key Generation
 
 ## Signing and Verification
-- [ ] Sign data with Private Key
-- [ ] Verify signature with Public Key
+- [x] Sign data with Private Key
+- [x] Verify signature with Public Key
 
 ## EXTRA FEATURES
-- [ ] bcrypt KDF support for encrypted keys
+- [x] bcrypt KDF support for encrypted keys

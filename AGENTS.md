@@ -105,10 +105,10 @@ Claude는 **완전 자율 모드**로 동작합니다. 다음 루프를 따르�
 - [x] Private Key로 데이터 서명
 - [x] Public Key로 서명 검증
 
-## Phase 5: 키 생성 (선택)
-- [ ] RSA 키 생성
-- [ ] ECDSA 키 생성
-- [ ] Ed25519 키 생성
+## Phase 5: 키 생성 ✅
+- [x] RSA 키 생성
+- [x] ECDSA 키 생성
+- [x] Ed25519 키 생성
 
 </section>
 

@@ -268,3 +268,127 @@ struct SigningTests {
         #expect(!publicKey.verify(signature, for: wrongData))
     }
 }
+
+@Suite("Key Generation Tests")
+struct KeyGenerationTests {
+
+    @Test("Generate Ed25519 key")
+    func generateEd25519Key() throws {
+        let privateKey = try Xuanxue.PrivateKey.generateEd25519(comment: "test@generated")
+
+        #expect(privateKey.algorithm == .ed25519)
+        #expect(privateKey.keySize == 256)
+        #expect(privateKey.comment == "test@generated")
+        #expect(privateKey.publicKey.algorithm == .ed25519)
+    }
+
+    @Test("Generate Ed25519 key and sign/verify")
+    func generateEd25519KeySignAndVerify() throws {
+        let privateKey = try Xuanxue.PrivateKey.generateEd25519()
+        let publicKey = privateKey.publicKey
+
+        let data = "Hello, World!".data(using: .utf8)!
+        let signature = privateKey.sign(data)
+
+        #expect(!signature.isEmpty)
+        #expect(publicKey.verify(signature, for: data))
+    }
+
+    @Test("Generate ECDSA P-256 key")
+    func generateECDSAP256Key() throws {
+        let privateKey = try Xuanxue.PrivateKey.generateECDSA(curve: .p256, comment: "test@ecdsa-p256")
+
+        #expect(privateKey.algorithm == .ecdsaSha2Nistp256)
+        #expect(privateKey.keySize == 256)
+        #expect(privateKey.comment == "test@ecdsa-p256")
+        #expect(privateKey.publicKey.algorithm == .ecdsaSha2Nistp256)
+    }
+
+    @Test("Generate ECDSA P-384 key")
+    func generateECDSAP384Key() throws {
+        let privateKey = try Xuanxue.PrivateKey.generateECDSA(curve: .p384, comment: "test@ecdsa-p384")
+
+        #expect(privateKey.algorithm == .ecdsaSha2Nistp384)
+        #expect(privateKey.keySize == 384)
+        #expect(privateKey.comment == "test@ecdsa-p384")
+        #expect(privateKey.publicKey.algorithm == .ecdsaSha2Nistp384)
+    }
+
+    @Test("Generate ECDSA P-521 key")
+    func generateECDSAP521Key() throws {
+        let privateKey = try Xuanxue.PrivateKey.generateECDSA(curve: .p521, comment: "test@ecdsa-p521")
+
+        #expect(privateKey.algorithm == .ecdsaSha2Nistp521)
+        #expect(privateKey.keySize == 521)
+        #expect(privateKey.comment == "test@ecdsa-p521")
+        #expect(privateKey.publicKey.algorithm == .ecdsaSha2Nistp521)
+    }
+
+    @Test("Generate ECDSA key and sign/verify")
+    func generateECDSAKeySignAndVerify() throws {
+        let privateKey = try Xuanxue.PrivateKey.generateECDSA(curve: .p256)
+        let publicKey = privateKey.publicKey
+
+        let data = "Test message for ECDSA signing".data(using: .utf8)!
+        let signature = privateKey.sign(data)
+
+        #expect(!signature.isEmpty)
+        #expect(publicKey.verify(signature, for: data))
+    }
+
+    @Test("Generate RSA 2048 key")
+    func generateRSA2048Key() throws {
+        let privateKey = try Xuanxue.PrivateKey.generateRSA(keySize: 2048, comment: "test@rsa-2048")
+
+        #expect(privateKey.algorithm == .rsa)
+        #expect(privateKey.keySize == 2048)
+        #expect(privateKey.comment == "test@rsa-2048")
+        #expect(privateKey.publicKey.algorithm == .rsa)
+    }
+
+    @Test("Generate RSA 3072 key")
+    func generateRSA3072Key() throws {
+        let privateKey = try Xuanxue.PrivateKey.generateRSA(keySize: 3072, comment: "test@rsa-3072")
+
+        #expect(privateKey.algorithm == .rsa)
+        #expect(privateKey.keySize == 3072)
+        #expect(privateKey.comment == "test@rsa-3072")
+    }
+
+    @Test("Generate RSA 4096 key")
+    func generateRSA4096Key() throws {
+        let privateKey = try Xuanxue.PrivateKey.generateRSA(keySize: 4096, comment: "test@rsa-4096")
+
+        #expect(privateKey.algorithm == .rsa)
+        #expect(privateKey.keySize == 4096)
+        #expect(privateKey.comment == "test@rsa-4096")
+    }
+
+    @Test("Generate RSA key and sign/verify")
+    func generateRSAKeySignAndVerify() throws {
+        let privateKey = try Xuanxue.PrivateKey.generateRSA(keySize: 2048)
+        let publicKey = privateKey.publicKey
+
+        let data = "Test message for RSA signing".data(using: .utf8)!
+        let signature = privateKey.sign(data)
+
+        #expect(!signature.isEmpty)
+        #expect(publicKey.verify(signature, for: data))
+    }
+
+    @Test("Invalid RSA key size throws error")
+    func invalidRSAKeySize() {
+        #expect(throws: SSHError.self) {
+            _ = try Xuanxue.PrivateKey.generateRSA(keySize: 1024)
+        }
+    }
+
+    @Test("Generated keys are unique")
+    func generatedKeysAreUnique() throws {
+        let key1 = try Xuanxue.PrivateKey.generateEd25519()
+        let key2 = try Xuanxue.PrivateKey.generateEd25519()
+
+        // Public keys should be different
+        #expect(key1.publicKey != key2.publicKey)
+    }
+}
