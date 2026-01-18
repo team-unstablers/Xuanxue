@@ -23,6 +23,9 @@ Xuanxue는 바이브 코딩으로 작성된 Swift용 SSH 키 라이브러리입�
 
 - 테스트 키가 필요한 경우, `ssh-keygen`을 사용하여 키를 생성하십시오.
 
+- 코드 구현 시에는 README.md의 예시 코드를 반드시 참조해 주십시오.
+- 각 페이즈 완료 시에는 CLAUDE.md / README.md를 업데이트 해주십시오.
+
 </section>
 <section id="agent-rules">
 
@@ -75,32 +78,32 @@ Claude는 **완전 자율 모드**로 동작합니다. 다음 루프를 따르�
 
 > README.md의 FEATURES 섹션에서 추출. 자율 루프에서 참조할 체크리스트.
 
-## Phase 1: 기반 구축
-- [ ] Package.swift에 swift-asn1 의존성 추가
-- [ ] Package.swift에 libbcrypt 타겟 추가
-- [ ] 기본 테스트 프레임워크 구축
+## Phase 1: 기반 구축 ✅
+- [x] Package.swift에 swift-asn1 의존성 추가
+- [x] Package.swift에 libbcrypt 타겟 추가
+- [x] 기본 테스트 프레임워크 구축
 
-## Phase 2: 키 로딩
-- [ ] OpenSSH Public Key 로딩
-- [ ] OpenSSH Private Key 로딩
-  - [ ] 암호화된 Private Key 지원
-  - [ ] bcrypt KDF 지원
-- [ ] PEM Private Key 로딩
+## Phase 2: 키 로딩 ✅
+- [x] OpenSSH Public Key 로딩
+- [x] OpenSSH Private Key 로딩
+  - [x] 암호화된 Private Key 지원
+  - [x] bcrypt KDF 지원 (bcrypt_pbkdf 구현)
+- [x] PEM Private Key 로딩
 
-## Phase 3: 키 타입 / 알고리즘
-- [ ] RSA 키 지원
-  - [ ] `ssh-rsa`: RSA with SHA-1
-  - [ ] `rsa-sha2-256`: RSA with SHA-256
-  - [ ] `rsa-sha2-512`: RSA with SHA-512
-- [ ] ECDSA 키 지원
-  - [ ] `ecdsa-sha2-nistp256`
-  - [ ] `ecdsa-sha2-nistp384`
-  - [ ] `ecdsa-sha2-nistp521`
-- [ ] Ed25519 키 지원
+## Phase 3: 키 타입 / 알고리즘 ✅
+- [x] RSA 키 지원
+  - [x] `ssh-rsa`: RSA with SHA-1
+  - [x] `rsa-sha2-256`: RSA with SHA-256
+  - [x] `rsa-sha2-512`: RSA with SHA-512
+- [x] ECDSA 키 지원
+  - [x] `ecdsa-sha2-nistp256`
+  - [x] `ecdsa-sha2-nistp384`
+  - [x] `ecdsa-sha2-nistp521`
+- [x] Ed25519 키 지원
 
-## Phase 4: 서명 및 검증
-- [ ] Private Key로 데이터 서명
-- [ ] Public Key로 서명 검증
+## Phase 4: 서명 및 검증 ✅
+- [x] Private Key로 데이터 서명
+- [x] Public Key로 서명 검증
 
 ## Phase 5: 키 생성 (선택)
 - [ ] RSA 키 생성

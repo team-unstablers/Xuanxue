@@ -1,0 +1,9 @@
+*.o
+*.a
+*.so*
+*.3
+*.pc
+bcrypt_test
+!crypt_blowfish/crypt.3
+crypt_blowfish/crypt_test
+crypt_blowfish/crypt_test_threads

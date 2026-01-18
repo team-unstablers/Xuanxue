@@ -1,3 +1,0 @@
-[submodule "dependencies/libbcrypt"]
-	path = dependencies/libbcrypt
-	url = git@github.com:team-unstablers/libbcrypt.git
