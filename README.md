@@ -3,6 +3,22 @@
 Xuanxue - Vibe-coded SSH Key library for Swift Programming Language.
 
 
+## Why "Xuanxue"?
+
+**Xuanxue** (玄学, pinyin: xuán xué) is a Chinese term that literally translates to "dark learning" or "mysterious learning." Historically, it refers to a Wei and Jin dynasty philosophical school that blended Taoist and Confucian ideals, often translated as "Neo-Taoism" or "metaphysics."
+
+In modern Chinese internet slang—especially among programmers—**玄学** has taken on a humorous, self-deprecating meaning. It describes phenomena in programming that seem to defy logic:
+
+- Bugs that mysteriously appear or disappear without any code changes
+- Code that works for reasons no one can fully explain
+- The classic programmer wisdom: *"If it works, don't touch it"*
+- Ritualistic behaviors like "rebooting to fix everything" or adding "Buddha bless this code" comments
+
+This library is named **Xuanxue** because it was built entirely through **vibe coding**—a development approach where code emerges through conversation with AI, intuition, and iterative experimentation rather than traditional upfront design. Sometimes the code just... works, and we're not entirely sure why. That's the essence of 玄学.
+
+In the spirit of 玄学编程 (metaphysical programming): if the tests pass and the signatures verify, we don't question it too deeply.
+
+
 # SYNOPSIS
 
 ## Loading public key
