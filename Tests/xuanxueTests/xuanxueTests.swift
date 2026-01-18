@@ -1,7 +1,7 @@
 import Testing
 import Foundation
 import SwiftASN1
-@testable import xuanxue
+@testable import Xuanxue
 
 // MARK: - Test Keys
 struct TestKeys {

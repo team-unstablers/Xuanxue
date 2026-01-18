@@ -4,15 +4,15 @@
 import PackageDescription
 
 let package = Package(
-    name: "xuanxue",
+    name: "Xuanxue",
     platforms: [
         .macOS(.v13),
         .iOS(.v16),
     ],
     products: [
         .library(
-            name: "xuanxue",
-            targets: ["xuanxue"]
+            name: "Xuanxue",
+            targets: ["Xuanxue"]
         ),
     ],
     dependencies: [
@@ -49,7 +49,7 @@ let package = Package(
             ]
         ),
         .target(
-            name: "xuanxue",
+            name: "Xuanxue",
             dependencies: [
                 "libbcrypt",
                 .product(name: "SwiftASN1", package: "swift-asn1"),
@@ -57,7 +57,7 @@ let package = Package(
         ),
         .testTarget(
             name: "xuanxueTests",
-            dependencies: ["xuanxue"]
+            dependencies: ["Xuanxue"]
         ),
     ]
 )
