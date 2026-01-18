@@ -81,7 +81,7 @@ struct TestKeys {
         -----END OPENSSH PRIVATE KEY-----
         """
 
-    static let ed25519EncryptedPassphrase = "testpassword"
+    static let ed25519EncryptedPassphrase = Data("testpassword".utf8)
 }
 
 @Suite("Xuanxue Tests")
@@ -201,7 +201,7 @@ struct PrivateKeyLoadingTests {
         #expect(throws: SSHError.self) {
             _ = try Xuanxue.PrivateKey(
                 sshString: TestKeys.ed25519EncryptedPrivateKey,
-                passphrase: "wrongpassword"
+            passphrase: Data("wrongpassword".utf8)
             )
         }
     }

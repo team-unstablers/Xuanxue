@@ -35,7 +35,8 @@ public struct PrivateKey: @unchecked Sendable {
     private static let opensshMagic = "openssh-key-v1\0"
 
     /// Parse a private key from OpenSSH format string
-    public init(sshString: String, passphrase: String? = nil) throws {
+    /// - Parameter passphrase: Optional UTF-8 passphrase data for encrypted keys.
+    public init(sshString: String, passphrase: Data? = nil) throws {
         let trimmed = sshString.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if trimmed.hasPrefix("-----BEGIN OPENSSH PRIVATE KEY-----") {
@@ -50,7 +51,7 @@ public struct PrivateKey: @unchecked Sendable {
     }
 
     /// Parse an OpenSSH format private key
-    private init(opensshPEM: String, passphrase: String?) throws {
+    private init(opensshPEM: String, passphrase: Data?) throws {
         let lines = opensshPEM.components(separatedBy: .newlines)
             .filter { !$0.hasPrefix("-----") && !$0.isEmpty }
         let base64Content = lines.joined()
@@ -63,7 +64,7 @@ public struct PrivateKey: @unchecked Sendable {
     }
 
     /// Parse OpenSSH binary data
-    private init(opensshData data: Data, passphrase: String?) throws {
+    private init(opensshData data: Data, passphrase: Data?) throws {
         var buffer = SSHBuffer(data)
 
         // Check magic
@@ -84,7 +85,8 @@ public struct PrivateKey: @unchecked Sendable {
 
         // Read public key
         let publicKeyData = try buffer.readBytes()
-        let encryptedData = try buffer.readBytes()
+        var encryptedData = try buffer.readBytes()
+        defer { Self.zeroize(&encryptedData) }
 
         // Read KDF options before decryption
         var kdfBuffer = SSHBuffer(Data())
@@ -98,7 +100,8 @@ public struct PrivateKey: @unchecked Sendable {
         kdfBuffer = SSHBuffer(kdfOptions)
 
         // Decrypt if needed
-        let decryptedData: Data
+        var decryptedData = Data()
+        defer { Self.zeroize(&decryptedData) }
         if cipherName == "none" {
             guard kdfName == "none" else {
                 throw SSHError.invalidFormat("KDF should be 'none' when cipher is 'none'")
@@ -106,9 +109,10 @@ public struct PrivateKey: @unchecked Sendable {
             decryptedData = encryptedData
         } else {
             // Encrypted key requires passphrase
-            guard let passphrase = passphrase, !passphrase.isEmpty else {
+            guard var passphrase = passphrase, !passphrase.isEmpty else {
                 throw SSHError.decryptionFailed("Passphrase required for encrypted key")
             }
+            defer { Self.zeroize(&passphrase) }
 
             // Parse KDF options
             guard kdfName == "bcrypt" else {
@@ -123,13 +127,24 @@ public struct PrivateKey: @unchecked Sendable {
 
             // Derive key using bcrypt_pbkdf
             var derivedKey = [UInt8](repeating: 0, count: keyLen + ivLen)
-            let result = passphrase.withCString { passCStr in
-                salt.withUnsafeBytes { saltPtr in
-                    bcrypt_pbkdf(passCStr, passphrase.utf8.count,
-                                saltPtr.baseAddress?.assumingMemoryBound(to: UInt8.self),
-                                salt.count,
-                                &derivedKey, keyLen + ivLen,
-                                rounds)
+            defer { Self.zeroize(&derivedKey) }
+            let result: Int32 = passphrase.withUnsafeBytes { passPtr in
+                guard let passBase = passPtr.baseAddress?.assumingMemoryBound(to: UInt8.self) else {
+                    return -1
+                }
+                return salt.withUnsafeBytes { saltPtr in
+                    guard let saltBase = saltPtr.baseAddress?.assumingMemoryBound(to: UInt8.self) else {
+                        return -1
+                    }
+                    return bcrypt_pbkdf(
+                        passBase,
+                        passphrase.count,
+                        saltBase,
+                        salt.count,
+                        &derivedKey,
+                        keyLen + ivLen,
+                        rounds
+                    )
                 }
             }
 
@@ -137,8 +152,12 @@ public struct PrivateKey: @unchecked Sendable {
                 throw SSHError.decryptionFailed("bcrypt_pbkdf failed")
             }
 
-            let key = Data(derivedKey[0..<keyLen])
-            let iv = Data(derivedKey[keyLen..<(keyLen + ivLen)])
+            var key = Data(derivedKey[0..<keyLen])
+            var iv = Data(derivedKey[keyLen..<(keyLen + ivLen)])
+            defer {
+                Self.zeroize(&key)
+                Self.zeroize(&iv)
+            }
 
             // Decrypt using AES
             decryptedData = try Self.decryptAES(encryptedData, key: key, iv: iv, cipher: cipherName, blockSize: blockSize)
@@ -194,7 +213,7 @@ public struct PrivateKey: @unchecked Sendable {
     }
 
     /// Parse a traditional PEM private key
-    private init(traditionalPEM: String, passphrase: String?) throws {
+    private init(traditionalPEM: String, passphrase: Data?) throws {
         let document = try PEMDocument(pemString: traditionalPEM)
 
         switch document.discriminator {
@@ -252,17 +271,24 @@ extension PrivateKey {
         // iqmp (coefficient), p (prime1), q (prime2)
         let n = try buffer.readBytes()
         let e = try buffer.readBytes()
-        let d = try buffer.readBytes()
-        let iqmp = try buffer.readBytes()
-        let p = try buffer.readBytes()
-        let q = try buffer.readBytes()
+        var d = try buffer.readBytes()
+        var iqmp = try buffer.readBytes()
+        var p = try buffer.readBytes()
+        var q = try buffer.readBytes()
+        defer {
+            Self.zeroize(&d)
+            Self.zeroize(&iqmp)
+            Self.zeroize(&p)
+            Self.zeroize(&q)
+        }
 
         // Calculate key size, removing leading zero bytes (used for sign extension)
         let effectiveModulusBytes = n.drop(while: { $0 == 0 })
         let keySize = effectiveModulusBytes.count * 8
 
         // Create PKCS#1 DER for private key
-        let derData = try encodeRSAPrivateKeyDER(n: n, e: e, d: d, p: p, q: q, iqmp: iqmp)
+        var derData = try encodeRSAPrivateKeyDER(n: n, e: e, d: d, p: p, q: q, iqmp: iqmp)
+        defer { Self.zeroize(&derData) }
 
         let attributes: [String: Any] = [
             kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
@@ -285,10 +311,16 @@ extension PrivateKey {
 
     private static func encodeRSAPrivateKeyDER(n: Data, e: Data, d: Data, p: Data, q: Data, iqmp: Data) throws -> Data {
         // Calculate dp = d mod (p-1), dq = d mod (q-1)
-        let pMinus1 = BigIntOps.subtractOne(p)
-        let qMinus1 = BigIntOps.subtractOne(q)
-        let dp = BigIntOps.modulo(d, pMinus1)
-        let dq = BigIntOps.modulo(d, qMinus1)
+        var pMinus1 = BigIntOps.subtractOne(p)
+        var qMinus1 = BigIntOps.subtractOne(q)
+        var dp = BigIntOps.modulo(d, pMinus1)
+        var dq = BigIntOps.modulo(d, qMinus1)
+        defer {
+            Self.zeroize(&pMinus1)
+            Self.zeroize(&qMinus1)
+            Self.zeroize(&dp)
+            Self.zeroize(&dq)
+        }
 
         // For Security framework, we need PKCS#1 RSAPrivateKey format
         var serializer = DER.Serializer()
@@ -334,7 +366,8 @@ extension PrivateKey {
         // curve name, public point (Q), private scalar (d)
         let curveName = try buffer.readString()
         let publicPoint = try buffer.readBytes()
-        let privateScalar = try buffer.readBytes()
+        var privateScalar = try buffer.readBytes()
+        defer { Self.zeroize(&privateScalar) }
 
         guard curveName == algorithm.ecdsaCurveName else {
             throw SSHError.invalidKeyData("Curve mismatch")
@@ -384,7 +417,8 @@ extension PrivateKey {
         // OpenSSH Ed25519 private key format:
         // public key (32 bytes), private key (64 bytes = private + public)
         let publicKeyBytes = try buffer.readBytes()
-        let privateKeyBytes = try buffer.readBytes()
+        var privateKeyBytes = try buffer.readBytes()
+        defer { Self.zeroize(&privateKeyBytes) }
 
         guard publicKeyBytes.count == 32 else {
             throw SSHError.invalidKeyData("Ed25519 public key must be 32 bytes")
@@ -395,7 +429,8 @@ extension PrivateKey {
         }
 
         // The first 32 bytes of privateKeyBytes is the actual private seed
-        let privateSeed = privateKeyBytes.prefix(32)
+        var privateSeed = Data(privateKeyBytes.prefix(32))
+        defer { Self.zeroize(&privateSeed) }
         let privateKey = try Curve25519.Signing.PrivateKey(rawRepresentation: privateSeed)
 
         // Create public key data
@@ -503,7 +538,7 @@ extension PrivateKey {
 
 // MARK: - PEM Parsing (Traditional formats)
 extension PrivateKey {
-    private init(pkcs1RSAData: Data, passphrase: String?) throws {
+    private init(pkcs1RSAData: Data, passphrase: Data?) throws {
         #if canImport(Security)
         let attributes: [String: Any] = [
             kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
@@ -574,7 +609,7 @@ extension PrivateKey {
     }
     #endif
 
-    private init(sec1ECData: Data, passphrase: String?) throws {
+    private init(sec1ECData: Data, passphrase: Data?) throws {
         #if canImport(CryptoKit)
         // Try each curve size
         if let key = try? P256.Signing.PrivateKey(derRepresentation: sec1ECData) {
@@ -628,7 +663,7 @@ extension PrivateKey {
         #endif
     }
 
-    private init(pkcs8Data: Data, passphrase: String?) throws {
+    private init(pkcs8Data: Data, passphrase: Data?) throws {
         // PKCS#8 can contain RSA, ECDSA, or Ed25519 keys
         #if canImport(CryptoKit)
         // Try ECDSA P256
@@ -838,6 +873,21 @@ public enum ECDSACurve: Sendable {
     case p521
 }
 
+// MARK: - Zeroization
+extension PrivateKey {
+    private static func zeroize(_ data: inout Data) {
+        guard !data.isEmpty else { return }
+        data.resetBytes(in: 0..<data.count)
+    }
+
+    private static func zeroize(_ bytes: inout [UInt8]) {
+        guard !bytes.isEmpty else { return }
+        for index in bytes.indices {
+            bytes[index] = 0
+        }
+    }
+}
+
 // MARK: - Encryption Helpers
 extension PrivateKey {
     /// Get cipher parameters: (key length, IV length, block size)
@@ -878,6 +928,7 @@ extension PrivateKey {
     private static func decryptAESCBC(_ data: Data, key: Data, iv: Data) throws -> Data {
         var outputBuffer = [UInt8](repeating: 0, count: data.count + kCCBlockSizeAES128)
         var numBytesDecrypted: size_t = 0
+        defer { Self.zeroize(&outputBuffer) }
 
         let status = key.withUnsafeBytes { keyBytes in
             iv.withUnsafeBytes { ivBytes in
@@ -908,6 +959,7 @@ extension PrivateKey {
         var counter = [UInt8](iv)
         var result = Data()
         let blockSize = 16
+        defer { Self.zeroize(&counter) }
 
         for blockStart in stride(from: 0, to: data.count, by: blockSize) {
             let blockEnd = min(blockStart + blockSize, data.count)
@@ -938,6 +990,7 @@ extension PrivateKey {
             for (i, byte) in block.enumerated() {
                 result.append(byte ^ keystream[i])
             }
+            Self.zeroize(&keystream)
 
             // Increment counter (big-endian)
             for i in (0..<blockSize).reversed() {

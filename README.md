@@ -71,6 +71,18 @@ else {
 }
 ```
 
+## Loading Encrypted OpenSSH Private Key
+```swift
+let encryptedKeyText = """
+-----BEGIN OPENSSH PRIVATE KEY-----
+... encrypted key content ...
+-----END OPENSSH PRIVATE KEY-----
+"""
+
+let passphrase = Data("testpassword".utf8)
+let privateKey = try Xuanxue.PrivateKey(sshString: encryptedKeyText, passphrase: passphrase)
+```
+
 ## Key Generation
 
 ```swift

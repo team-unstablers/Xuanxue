@@ -12,6 +12,6 @@
         - 수정 후에는 보안 감사 레포트에 '어떻게 수정했는지'에 대해 추가 기록하십시오.
     </objective>
     <see-also>
-        - dependencies/libbcrypt/bcrypt_pbkdf.c
+        - Sources/xuanxue/PrivateKey.swift
     </see-also>
 </agent-task>

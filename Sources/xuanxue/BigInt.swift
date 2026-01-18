@@ -13,26 +13,34 @@ enum BigIntOps {
             borrow = newBorrow ? 1 : 0
         }
 
-        return Data(result)
+        let output = Data(result)
+        zeroize(&result)
+        return output
     }
 
     /// Calculate a mod b for big-endian unsigned integers
     static func modulo(_ a: Data, _ b: Data) -> Data {
         // Convert to arrays for easier manipulation
         var dividend = [UInt8](a)
-        let divisor = [UInt8](b)
+        var divisor = [UInt8](b)
+        var effectiveDivisor = [UInt8]()
+        var remainder = [UInt8]()
+        defer {
+            zeroize(&dividend)
+            zeroize(&divisor)
+            zeroize(&effectiveDivisor)
+            zeroize(&remainder)
+        }
 
         // Remove leading zeros from divisor
         var divisorStart = 0
         while divisorStart < divisor.count - 1 && divisor[divisorStart] == 0 {
             divisorStart += 1
         }
-        let effectiveDivisor = Array(divisor[divisorStart...])
+        effectiveDivisor = Array(divisor[divisorStart...])
 
         // Simple long division for modulo
         // This is a basic implementation suitable for RSA key derivation
-        var remainder = [UInt8]()
-
         for byte in dividend {
             remainder.append(byte)
 
@@ -56,7 +64,8 @@ enum BigIntOps {
             remainder.insert(0, at: 0)
         }
 
-        return Data(remainder)
+        let output = Data(remainder)
+        return output
     }
 
     /// Compare two big-endian unsigned integers
@@ -113,5 +122,12 @@ enum BigIntOps {
         }
 
         return result
+    }
+
+    private static func zeroize(_ bytes: inout [UInt8]) {
+        guard !bytes.isEmpty else { return }
+        for index in bytes.indices {
+            bytes[index] = 0
+        }
     }
 }

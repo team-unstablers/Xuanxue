@@ -72,6 +72,9 @@ else {
 }
 ```
 
+## NOTE: Passphrase API Migration
+- `PrivateKey(sshString:passphrase:)` now accepts `Data?` for passphrases. Convert strings with `Data("...".utf8)`.
+
 ## Key Generation
 
 ```swift
