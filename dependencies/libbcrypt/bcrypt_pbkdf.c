@@ -10,6 +10,15 @@
 #include "bcrypt_pbkdf.h"
 #include "sha512.h"
 
+/* Best-effort secure zeroization to prevent compiler elision */
+static void secure_memzero(void *ptr, size_t len)
+{
+    volatile uint8_t *p = (volatile uint8_t *)ptr;
+    while (len--) {
+        *p++ = 0;
+    }
+}
+
 /* Blowfish constants */
 #define BCRYPT_WORDS 8
 #define BCRYPT_HASHSIZE_PBKDF 32
@@ -446,6 +455,9 @@ static void bcrypt_hash(uint8_t *sha2pass, uint8_t *sha2salt, uint8_t *out)
         out[4 * i + 1] = (cdata[i] >> 8) & 0xff;
         out[4 * i + 0] = cdata[i] & 0xff;
     }
+
+    secure_memzero(&ctx, sizeof(ctx));
+    secure_memzero(cdata, sizeof(cdata));
 }
 
 /* bcrypt PBKDF main function */
@@ -462,6 +474,8 @@ int bcrypt_pbkdf(const char *pass, size_t passlen, const uint8_t *salt,
     size_t origkeylen = keylen;
     SHA512_CTX ctx;
 
+    if (pass == NULL || salt == NULL || key == NULL)
+        return -1;
     if (rounds < 1)
         return -1;
     if (passlen == 0 || saltlen == 0 || keylen == 0 ||
@@ -516,10 +530,12 @@ int bcrypt_pbkdf(const char *pass, size_t passlen, const uint8_t *salt,
     }
 
     /* Clear sensitive data */
-    memset(sha2pass, 0, sizeof(sha2pass));
-    memset(sha2salt, 0, sizeof(sha2salt));
-    memset(tmpout, 0, sizeof(tmpout));
-    memset(out, 0, sizeof(out));
+    secure_memzero(sha2pass, sizeof(sha2pass));
+    secure_memzero(sha2salt, sizeof(sha2salt));
+    secure_memzero(tmpout, sizeof(tmpout));
+    secure_memzero(out, sizeof(out));
+    secure_memzero(countsalt, sizeof(countsalt));
+    secure_memzero(&ctx, sizeof(ctx));
 
     return 0;
 }

@@ -1,148 +1,186 @@
 <section id="project-info">
 # Xuanxue
 
-Xuanxue는 바이브 코딩으로 작성된 Swift용 SSH 키 라이브러리입니다.
-
-다음과 같은 기능이 있습니다: (see also: README.md)
-- SSH 공개 키 불러오기
-- OpenSSH 형식의 SSH 개인 키 불러오기
-- 데이터 서명 및 검증
-
-## SEE ALSO
-- `dependencies/libbcrypt` - C언어 기반의 오픈 소스 bcrypt 라이브러리 구현체입니다. 이를 Package.swift에 타겟으로 추가하여 bcrypt KDF를 지원하십시오.
-    - 참고로, libbcrypt 자체의 수정이 필요할 수도 있습니다. 주저 말고 수정하십시오.
-- `additional-contexts` - 원격 제어 소프트웨어 'Noctiluca'에서 이 프로젝트가 필요해진 이유를 볼 수 있을 겁니다. 그리고, 이전에 구현된 코드도 확인할 수 있습니다.
+Xuanxue - Vibe-coded SSH Key library for Swift Programming Language.
 
 
-## IMPLEMETATION RULES
+## Why "Xuanxue"?
 
-- `swift-asn1` 패키지를 사용하여 ASN.1 파싱 및 인코딩을 수행하십시오.
-- 어차피 macOS / iOS에서만 쓰일 것이므로 Apple 플랫폼 전용 프레임워크 (CryptoKit, Security) 등을 자유롭게 사용하십시오. 단, 만일을 대비하여 플랫폼 분기 (베이스 프로토콜 + #if canImport() + 구현체) 형태로 작성하는 것을 권장합니다.
+**Xuanxue** (玄学, pinyin: xuán xué) is a Chinese term that literally translates to "dark learning" or "mysterious learning." Historically, it refers to a Wei and Jin dynasty philosophical school that blended Taoist and Confucian ideals, often translated as "Neo-Taoism" or "metaphysics."
 
-- RSA 키 로드 / 서명은 Security 프레임워크, 그 외 알고리즘의 경우 CryptoKit을 사용하십시오.
+In modern Chinese internet slang—especially among programmers—**玄学** has taken on a humorous, self-deprecating meaning. It describes phenomena in programming that seem to defy logic:
 
-- 테스트 키가 필요한 경우, `ssh-keygen`을 사용하여 키를 생성하십시오.
+- Bugs that mysteriously appear or disappear without any code changes
+- Code that works for reasons no one can fully explain
+- The classic programmer wisdom: *"If it works, don't touch it"*
+- Ritualistic behaviors like "rebooting to fix everything" or adding "Buddha bless this code" comments
 
-- 코드 구현 시에는 README.md의 예시 코드를 반드시 참조해 주십시오.
-- 각 페이즈 완료 시에는 CLAUDE.md / README.md를 업데이트 해주십시오.
+This library is named **Xuanxue** because it was built entirely through **vibe coding**—a development approach where code emerges through conversation with AI, intuition, and iterative experimentation rather than traditional upfront design. Sometimes the code just... works, and we're not entirely sure why. That's the essence of 玄学.
 
+In the spirit of 玄学编程 (metaphysical programming): if the tests pass and the signatures verify, we don't question it too deeply.
+
+
+# SYNOPSIS
+
+## Loading public key
+
+```swift
+import Xuanxue
+
+let publicKeyText = """
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDWur/C6nWpMXT4XfmgqvROM8dAd/iY71G2osffZ8u/XQDE7BEWybKDa3Q4cuhWmFmpuU8J2SqrdY0gAAi/ty3+MIqGC9L7u3PIG5ODuAnuzELX1Gv2DD4ob5e9DpzGtvwZ/uTIfHn6wLWzmHFuP9XBGHN3wIJLz8Seey39E/ESZPMWlXQoFbj17Puwo/m6Dw+DlhVcvmXTVWsA/cUuTYWiOUs5b8c+63Rp0Qab84UyyCJgpL0c4hm0QbLXTLqjDpKFIII0XJxSM/wdrmWMruwOJnW05nWR1tpHJLSwBbf/Vl3Ro2eq7C7kA7wr0D+mlmwKtGuJ57mcOxjK2uU28z4vGNb86WBx7MTWH+0yLHfED/2cesrc+5u4C0CgNSYzAyrEuq26jsYfUrf86eK4p3ysd2NvoSKkKl19v2a5AIRq+ccM40JpvhJQrF1SV7uUDMzoBeBnmmFx/HnsH+og8m5kBaDD5qQSklyaF61L5ACeWVFlFYiXxp6hlcrdLCriHyc= wodeshijie@among.us
+"""
+
+let publicKey = try Xuanxue.PublicKey(sshString: publicKeyText)
+
+guard publicKey.algorithm == .rsa,
+      publicKey.keySize == 2048
+else {
+    fatalError("ASSERTION FAILED: key.algorithm == .rsa && key.keySize == 2048")
+}
+```
+
+## Loading OpenSSH Private Key
+```swift
+
+let privateKeyText = """
+-----BEGIN OPENSSH PRIVATE KEY-----
+44CK5oiR55qE5LiW55WM44CL77yI6Iux6K+t77yaTWluZWNyYWZ077yJ77yM
+5Y+I6K+R5b2T5Liq5Yib5LiW56We44CB6bqm5Z2X77yM5piv5b6u6L2v5peX
+5LiLTW9qYW5nIFN0dWRpb3PlvIDlj5HnmoTmspnnm5LmuLjmiI/jgILmuLjm
+iI/kuK3vvIznjqnlrrbog73lnKjkuIDkuKozROS4lueVjOWGheS4juaWueWd
+l+aIlueUn+eJqei/m+ihjOS6pOS6kuOAgua4uOaIj+S4reeahOeJueiJsueO
+qeazleWMheaLrOaOoue0ouS4lueVjOOAgemHh+mbhui1hOa6kOOAgeWQiOaI
+kOeJqeWTgeWPiueUn+WtmOWGkumZqeetieOAguOAiuaIkeeahOS4lueVjOOA
+i+acieWkmuenjeaooeW8j+OAguWFtuS4re+8jOS4pOS4quacgOS4u+imgeea
+hOa4uOaIj+aooeW8j++8mueUn+WtmOS4juWIm+mAoOOAguWcqOeUn+WtmOao
+oeW8j+S4re+8jOeOqeWutuW/hemhu+e7tOaMgeeUn+WRve+8jOWKquWKm+mB
+v+WFjeWPl+S8pOOAgemlpemlv+WSjOatu+S6oe+8jOW5tuW8gOmHh+i1hOa6
+kOS7peaJk+mAoOiHquW3seeahOS4lueVjO+8m+WcqOWIm+mAoOaooeW8j+S4
+re+8jOeOqeWutuaLpeacieaXoOmZkOeahOi1hOa6kO+8jOWPr+S7peiHqueU
+seWcsOWIm+S9nO+8jOS4lOS4jeS8muWPl+S8pOWSjOatu+S6oe+8jOS5n+WP
+r+S7peWFjeS6jumlpemlv++8jOW5tuaLpeaciemjnuihjOiDveWKm+OAgiAK
+-----END OPENSSH PRIVATE KEY-----
+"""
+
+let privateKey = try Xuanxue.PrivateKey(sshString: privateKeyText)
+
+guard privateKey.algorithm == .rsa,
+      privateKey.keySize == 2048
+else {
+    fatalError("ASSERTION FAILED: key.algorithm == .rsa && key.keySize == 2048")
+}
+```
+
+## Key Generation
+
+```swift
+import Xuanxue
+
+// Generate Ed25519 key (fastest, recommended for new keys)
+let ed25519Key = try Xuanxue.PrivateKey.generateEd25519(comment: "user@host")
+
+// Generate ECDSA key (P-256, P-384, or P-521)
+let ecdsaKey = try Xuanxue.PrivateKey.generateECDSA(curve: .p256, comment: "user@host")
+
+// Generate RSA key (2048, 3072, or 4096 bits)
+let rsaKey = try Xuanxue.PrivateKey.generateRSA(keySize: 2048, comment: "user@host")
+
+// Access the corresponding public key
+let publicKey = ed25519Key.publicKey
+```
+
+## Signing and Verifying Data
+
+```swift
+
+let data = """
+《我的世界》（英语：Minecraft），又译当个创世神、麦块，是微软旗下Mojang Studios开发的沙盒游戏。游戏中，玩家能在一个3D世界内与方块或生物进行交互。游戏中的特色玩法包括探索世界、采集资源、合成物品及生存冒险等。《我的世界》有多种模式。其中，两个最主要的游戏模式：生存与创造。在生存模式中，玩家必须维持生命，努力避免受伤、饥饿和死亡，并开采资源以打造自己的世界；在创造模式中，玩家拥有无限的资源，可以自由地创作，且不会受伤和死亡，也可以免于饥饿，并拥有飞行能力。 
+""".data(using: .utf8)!
+
+let signature = privateKey.sign(data)
+
+guard publicKey.verify(signature, for: data) else {
+    fatalError("signature verification failed")
+}
+
+```
+
+# FEATURES
+
+## Key Loading
+- [x] load OpenSSH Private keys
+  - [x] load encrypted OpenSSH Private keys
+    - [x] support for different KDFs (bcrypt, etc)
+- [x] load PEM Private keys
+
+- [x] load OpenSSH Public Keys
+
+## Key Types / Algorithms
+- [x] RSA Key Support
+  - [x] `ssh-rsa`: RSA with SHA-1
+  - [x] `rsa-sha2-256`: RSA with SHA-256
+  - [x] `rsa-sha2-512`: RSA with SHA-512
+- [x] ECDSA Key Support
+  - [x] `ecdsa-sha2-nistp256`
+  - [x] `ecdsa-sha2-nistp384`
+  - [x] `ecdsa-sha2-nistp521`
+- [x] ed25519 Key Support
+
+## Key Generation
+- [x] RSA Key Generation
+- [x] ECDSA Key Generation
+- [x] ed25519 Key Generation
+
+## Signing and Verification
+- [x] Sign data with Private Key
+- [x] Verify signature with Public Key
+
+## EXTRA FEATURES
+- [x] bcrypt KDF support for encrypted keys
 </section>
 <section id="agent-rules">
 
 # AGENT RULES
 
-## 1. 언어 및 기본 규칙
-- 모든 대화와 Plan은 **한국어**로 작성
-- 중요한 변경 사항이 있으면 `AGENTS.md` 업데이트
-- 커밋 메시지/코드 코멘트는 사무적으로 작성
+## 1. Interaction & Language
+- 작업을 진행할 때 확실하지 않거나 궁금한 점이 있으면, 되도록 **추측하지 말고 사용자에게 질문**해서 명확히 하는 것을 우선해 주세요.
+- 사용자가 한국어 화자인 만큼, 모든 대화와 Plan 작성은 **반드시 한국어**로 진행해 주세요.
+- 프로젝트에 대한 중요한 정보나 커다란 변경 사항이 있을 때는, `AGENTS.md`를 수정하여 프로젝트에 대한 최신 정보를 반영해 주세요.
+- **권한이 부족하여 작업을 수행할 수 없는 경우, 반드시 사용자에게 elevation 요청을 해야 합니다.** (If a command fails due to insufficient permissions, you must elevate the command to the user for approval.)
 
-## 2. 자율 개발 루프 (Autonomous Development Loop)
+## 2. Workflow Protocol (중요)
+Codex는 기본적으로 자율적(Autonomous)으로 행동하지만, 아래의 **[Explicit Plan Mode]** 조건에 해당할 경우 행동 방식을 변경해야 합니다.
 
-### 기본 행동 원칙
-Claude는 **완전 자율 모드**로 동작합니다. 다음 루프를 따르세요:
+### [Explicit Plan Mode] 트리거 조건
+1. 사용자가 명시적으로 **'Plan 모드'**, **'계획 모드'**, 또는 **'설계 먼저'**라고 요청한 경우.
+2. 작업이 **3개 이상의 파일**에 구조적 변경을 일으키거나, **Core Logic(Protobuf, Network, AVFoundation)**을 건드리는 위험한 변경일 경우.
 
-1. **BUILD**: 코드를 작성/수정
-2. **TEST**: `swift test` 실행
-3. **ANALYZE**: 실패 시 원인 분석
-4. **FIX**: 문제 수정
-5. **REPEAT**: 모든 테스트 통과까지 반복
-6. **COMMIT**: 성공 시 의미 있는 단위로 커밋
+### [Explicit Plan Mode] 행동 수칙
+위 조건이 발동되면 **즉시 코드 구현을 멈추고** 다음 절차를 따르세요:
+1. **Stop:** 코드를 작성하거나 수정하지 마십시오. (파일 읽기는 가능)
+2. **Plan:** `update_plan` 도구를 사용하여 **한국어**로 상세 구현 계획, 영향 범위, 예상 리스크를 작성하십시오.
+3. **Ask:** 사용자에게 계획을 제시하고 **"이대로 진행할까요?"**라고 승인을 요청하십시오.
+4. **Action:** 사용자의 명시적 승인(예: "ㅇㅇ", "진행해")이 떨어진 후에만 코드를 수정하십시오.
 
-### 루프 종료 조건
-다음 조건을 **모두** 충족하면 작업 완료:
-- 모든 테스트 통과 (`swift test` 성공)
-- 빌드 성공 (`swift build` 성공)
-- 요청된 기능/버그 수정 완료
+*(위 조건에 해당하지 않는 단순 수정이나 버그 픽스는 기존대로 승인 없이 즉시 처리하고 결과를 보고하십시오.)*
 
-### 절대 하지 말 것
-- 테스트 실패를 무시하고 진행
-- 사용자에게 "이거 해도 될까요?" 반복 질문
-- 막히면 바로 포기 → 최소 3회 다른 접근법 시도 후 보고
+## COMMIT CONVENTIONS
 
-## 3. 커밋 컨벤션
+- 만약 git commit을 작성할 때는 기존 커밋 컨벤션을 따르는 것을 우선하고, 당신 자신을 Co-author로 추가하지 말아주세요.
+- 커밋 컨벤션은 다음과 같습니다.
 
 ```
 [scope]: [subject]
 ```
 
-예시:
-- `core/keys: SSH 공개 키 파싱 구현`
-- `test: Ed25519 키 서명 테스트 추가`
-- `fix: RSA 키 로드 시 메모리 누수 수정`
+- [scope]: 변경 사항의 범위를 나타내는 짧은 단어 (예: core, ui, docs 등)
+- [subject]: 변경 사항을 간결하게 설명하는 문장 (명령문 형태)
 
-</section>
-
-<section id="project-todo">
-
-# PROJECT TODO
-
-> README.md의 FEATURES 섹션에서 추출. 자율 루프에서 참조할 체크리스트.
-
-## Phase 1: 기반 구축 ✅
-- [x] Package.swift에 swift-asn1 의존성 추가
-- [x] Package.swift에 libbcrypt 타겟 추가
-- [x] 기본 테스트 프레임워크 구축
-
-## Phase 2: 키 로딩 ✅
-- [x] OpenSSH Public Key 로딩
-- [x] OpenSSH Private Key 로딩
-  - [x] 암호화된 Private Key 지원
-  - [x] bcrypt KDF 지원 (bcrypt_pbkdf 구현)
-- [x] PEM Private Key 로딩
-
-## Phase 3: 키 타입 / 알고리즘 ✅
-- [x] RSA 키 지원
-  - [x] `ssh-rsa`: RSA with SHA-1
-  - [x] `rsa-sha2-256`: RSA with SHA-256
-  - [x] `rsa-sha2-512`: RSA with SHA-512
-- [x] ECDSA 키 지원
-  - [x] `ecdsa-sha2-nistp256`
-  - [x] `ecdsa-sha2-nistp384`
-  - [x] `ecdsa-sha2-nistp521`
-- [x] Ed25519 키 지원
-
-## Phase 4: 서명 및 검증 ✅
-- [x] Private Key로 데이터 서명
-- [x] Public Key로 서명 검증
-
-## Phase 5: 키 생성 ✅
-- [x] RSA 키 생성
-- [x] ECDSA 키 생성
-- [x] Ed25519 키 생성
-
-</section>
-
-<section id="autonomous-loop">
-
-# AUTONOMOUS LOOP CONFIGURATION
-
-## Ralph Wiggum Plugin 사용법
-
-```bash
-# 설치 (최초 1회)
-/plugin marketplace add anthropics/claude-code
-/plugin install ralph-wiggum@claude-plugins-official
-
-# 실행
-/ralph --max-iterations 20 --completion-promise "모든 테스트 통과"
-
-# 취소
-/cancel-ralph
-```
-
-## 자율 루프 실행 시 규칙
-
-1. **매 반복마다 `swift test` 실행**
-2. **실패 시 원인 분석 후 수정** (같은 에러 3회 반복 시 다른 접근법 시도)
-3. **성공 시 다음 TODO 항목으로 이동**
-4. **의미 있는 단위로 커밋** (한 기능 완성 시)
-
-## 완료 신호
-
-모든 Phase의 TODO가 완료되면:
-```
-EXIT_SIGNAL: true
-모든 테스트 통과
-```
+### EXAMPLES
+  - `transport/quic: QUIC 연결 재시도 로직 추가`
+  - `msgdef/v1/channels: 채널 메시지 정의 업데이트`
+  - `docs(README): README 파일에 설치 가이드 추가`
+  - `test(transport/quic): QUIC 전송 테스트 케이스 작성`
 
 </section>

@@ -1,0 +1,17 @@
+<agent-task mode="planning">
+    <objective>
+        # Claude Code가 작성한 코드에 대해 보안 감사를 실시한다
+
+        - Claude Code가 작성한 코드 (하기 see-also 참조)에 대해 보안 감사를 실시하십시오.
+        - 잠재적 메모리 관리 오류, 비밀 데이터 누수 문제가 없어야 합니다.
+
+        - 만약 문제가 발견된 경우, 수정 플랜을 제시하고, 사용자의 컨펌을 받아 수정하십시오.
+        - 문제가 발견된 경우, `$REPO_ROOT/codex-security-audits/${git rev-parse --short HEAD}/$FILENAME.md` 로 보안 감사 레포트를 작성하십시오.
+
+        - 수정 후에는 유닛 테스트가 성공해야 합니다.
+        - 수정 후에는 보안 감사 레포트에 '어떻게 수정했는지'에 대해 추가 기록하십시오.
+    </objective>
+    <see-also>
+        - dependencies/libbcrypt/bcrypt_pbkdf.c
+    </see-also>
+</agent-task>
