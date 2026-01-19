@@ -1,0 +1,13 @@
+<agent-task mode="planning">
+    <objective>
+        # getentropy(2)의 platform-safe한 function을 작성한다
+
+        - `bcrypt.c`에서는 salt를 generate하기 위해서, `sys/random.h`를 #include 한 후, getentropy(2)를 호출하고 있습니다. 하지만 iOS SDK에서는 `sys/random.h` 헤더는 제공되지 않습니다.
+        - 인터넷 검색 결과, iOS에서는 Security.framework (`Security/SecRandom.h`)의 'SecRandomCopyBytes'를 사용해야 한다고 합니다.
+
+        - 따라서, getentropy(2)의 wrapper function을 만들고, 매크로 분기를 사용하여 iOS에서는 SecRandomCopyBytes를 사용하고, 다른 플랫폼에서는 getentropy를 그대로 사용하도록 분기해야 할 것 같습니다.
+    </objective>
+    <see-also>
+        - dependencies/libbcrypt/bcrypt.c
+    </see-also>
+</agent-task>
