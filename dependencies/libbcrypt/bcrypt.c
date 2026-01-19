@@ -15,7 +15,7 @@
 #include <unistd.h>
 #include <limits.h>
 
-#include <sys/random.h>
+#include "compat_random.h"
 
 #include "bcrypt.h"
 #include "crypt_blowfish/ow-crypt.h"
@@ -68,7 +68,7 @@ BCRYPT_API int bcrypt_gensalt(int factor, char salt[BCRYPT_HASHSIZE])
 	char *aux;
 
 	/* Get random bytes. */
-	ret = getentropy(input, sizeof(input));
+	ret = compat_getentropy(input, sizeof(input));
 	if (ret != 0)
 	    return 1;
 
