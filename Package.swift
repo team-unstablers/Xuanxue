@@ -12,7 +12,7 @@ let package = Package(
     products: [
         .library(
             name: "Xuanxue",
-            targets: ["Xuanxue"]
+            targets: ["Xuanxue", "libbcrypt"]
         ),
     ],
     dependencies: [
