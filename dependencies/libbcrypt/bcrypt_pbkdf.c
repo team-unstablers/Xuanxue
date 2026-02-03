@@ -486,9 +486,9 @@ int bcrypt_pbkdf(const char *pass, size_t passlen, const uint8_t *salt,
     amt = (keylen + stride - 1) / stride;
 
     /* Hash password */
-    SHA512_Init(&ctx);
-    SHA512_Update(&ctx, pass, passlen);
-    SHA512_Final(sha2pass, &ctx);
+    BCRYPT_SHA512_Init(&ctx);
+    BCRYPT_SHA512_Update(&ctx, pass, passlen);
+    BCRYPT_SHA512_Final(sha2pass, &ctx);
 
     /* Generate key material */
     for (count = 1; keylen > 0; count++) {
@@ -498,19 +498,19 @@ int bcrypt_pbkdf(const char *pass, size_t passlen, const uint8_t *salt,
         countsalt[3] = count & 0xff;
 
         /* First round: hash(salt || counter) */
-        SHA512_Init(&ctx);
-        SHA512_Update(&ctx, salt, saltlen);
-        SHA512_Update(&ctx, countsalt, 4);
-        SHA512_Final(sha2salt, &ctx);
+        BCRYPT_SHA512_Init(&ctx);
+        BCRYPT_SHA512_Update(&ctx, salt, saltlen);
+        BCRYPT_SHA512_Update(&ctx, countsalt, 4);
+        BCRYPT_SHA512_Final(sha2salt, &ctx);
 
         bcrypt_hash(sha2pass, sha2salt, tmpout);
         memcpy(out, tmpout, sizeof(out));
 
         /* Subsequent rounds */
         for (i = 1; i < rounds; i++) {
-            SHA512_Init(&ctx);
-            SHA512_Update(&ctx, tmpout, sizeof(tmpout));
-            SHA512_Final(sha2salt, &ctx);
+            BCRYPT_SHA512_Init(&ctx);
+            BCRYPT_SHA512_Update(&ctx, tmpout, sizeof(tmpout));
+            BCRYPT_SHA512_Final(sha2salt, &ctx);
 
             bcrypt_hash(sha2pass, sha2salt, tmpout);
 

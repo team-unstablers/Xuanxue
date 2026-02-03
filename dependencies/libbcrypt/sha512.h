@@ -13,8 +13,8 @@ typedef struct {
     uint8_t buf[128];
 } SHA512_CTX;
 
-void SHA512_Init(SHA512_CTX *ctx);
-void SHA512_Update(SHA512_CTX *ctx, const void *data, unsigned long len);
-void SHA512_Final(uint8_t *digest, SHA512_CTX *ctx);
+void BCRYPT_SHA512_Init(SHA512_CTX *ctx);
+void BCRYPT_SHA512_Update(SHA512_CTX *ctx, const void *data, unsigned long len);
+void BCRYPT_SHA512_Final(uint8_t *digest, SHA512_CTX *ctx);
 
 #endif

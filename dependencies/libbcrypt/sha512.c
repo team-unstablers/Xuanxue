@@ -194,21 +194,20 @@ void bcrypt_sha512_calc(const void *in, unsigned long len, char *sum)
 }
 
 /* Public API wrappers for bcrypt_pbkdf */
-void SHA512_Init(SHA512_CTX *ctx)
+void BCRYPT_SHA512_Init(SHA512_CTX *ctx)
 {
 	struct sha512 *s = (struct sha512 *)ctx;
 	sha512_init(s);
 }
 
-void SHA512_Update(SHA512_CTX *ctx, const void *data, unsigned long len)
+void BCRYPT_SHA512_Update(SHA512_CTX *ctx, const void *data, unsigned long len)
 {
 	struct sha512 *s = (struct sha512 *)ctx;
 	sha512_update(s, data, len);
 }
 
-void SHA512_Final(uint8_t *digest, SHA512_CTX *ctx)
+void BCRYPT_SHA512_Final(uint8_t *digest, SHA512_CTX *ctx)
 {
 	struct sha512 *s = (struct sha512 *)ctx;
 	sha512_sum(s, digest);
 }
-
