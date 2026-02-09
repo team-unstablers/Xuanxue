@@ -12,8 +12,15 @@ let package = Package(
     products: [
         .library(
             name: "Xuanxue",
+            type: .dynamic,
             targets: ["Xuanxue", "libbcrypt"]
         ),
+        .library(
+            name: "XuanxueStatic",
+            type: .static,
+            targets: ["Xuanxue", "libbcrypt"]
+        ),
+
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-asn1.git", from: "1.5.1"),
